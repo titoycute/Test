@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase CRUD Guide with Demo</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Simple animation for the message box */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Styling for the To-Do list items */
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl sm:text-5xl font-bold text-gray-900">Firebase Full CRUD Guide</h1>
+            <p class="mt-4 text-lg text-gray-600">From Authentication to managing user-specific data with Firestore.</p>
+        </header>
+
+        <main>
+            <!-- Instructional Content -->
+            <section class="mb-12 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-indigo-600">New Feature: User-Specific Data</h2>
+                <p class="mb-4">A login system is only useful if you can save and manage data for each user. In this step, we'll add a To-Do list. Each user will have their own private list, which demonstrates the full **CRUD (Create, Read, Update, Delete)** cycle.</p>
+                <p>We'll use a Firestore <strong class="font-medium text-gray-900">subcollection</strong>. This is like creating a folder of to-dos inside each user's main document, ensuring data is organized and secure.</p>
+                <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto mt-4"><code>// Data structure path in Firestore:
+users/{userId}/todos/{todoId}</code></pre>
+            </section>
+            
+            <section class="mb-12 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-indigo-600">Listening for Real-Time Updates</h2>
+                <p class="mb-4">To make the app feel modern, we need to see changes instantly. Instead of fetching data just once, we'll use Firestore's `onSnapshot` listener. It creates a live connection to the database, and our app will automatically update whenever a to-do is added, edited, or deleted.</p>
+                 <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"><code>// Listen for real-time changes to a user's todos
+const todosRef = collection(db, "users", userId, "todos");
+onSnapshot(todosRef, (snapshot) => {
+    // This code runs every time the data changes
+    // Re-render the to-do list UI here
+});</code></pre>
+            </section>
+
+             <section class="mb-12 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4 text-indigo-600">A Note on Security Rules</h2>
+                <p class="mb-4">Our current "allow all for 30 days" rule is great for testing. In a real app, you would use a more secure rule to ensure a user can only access their *own* data. It would look like this:</p>
+                 <pre class="bg-gray-100 p-4 rounded-md text-sm overflow-x-auto"><code>// In your Firestore Rules
+match /users/{userId}/{documents=**} {
+  allow read, write: if request.auth != null && request.auth.uid == userId;
+}</code></pre>
+                <p class="mt-4">This rule checks if a user is logged in (`request.auth != null`) and if their ID matches the document they are trying to access (`request.auth.uid == userId`).</p>
+            </section>
+
+
+            <!-- LIVE DEMO -->
+            <section class="mt-16 pt-8 border-t-2 border-indigo-200">
+                <h2 class="text-3xl font-bold text-center mb-8">Live Demo</h2>
+
+                <!-- Auth Forms Container -->
+                <div id="auth-container" class="max-w-md mx-auto">
+                    <div class="bg-white p-6 rounded-lg shadow-lg space-y-4">
+                        <h3 class="text-xl font-semibold text-center text-gray-700">Login or Register</h3>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-600">Email</label>
+                            <input type="email" id="email" placeholder="you@example.com" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-600">Password</label>
+                            <input type="password" id="password" placeholder="••••••••" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div class="flex gap-4">
+                            <button id="loginBtn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Login</button>
+                            <button id="registerBtn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Register</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logged-In User Container -->
+                <div id="user-container" class="hidden max-w-xl mx-auto mt-8 space-y-8">
+                    <!-- Welcome Message -->
+                    <div class="text-center bg-white p-8 rounded-lg shadow-lg">
+                        <h3 class="text-2xl font-semibold text-gray-800">Welcome!</h3>
+                        <p class="mt-2 text-gray-600">Logged in as <span id="userEmail" class="font-medium text-indigo-600"></span>.</p>
+                        <button id="logoutButton" class="mt-6 w-full max-w-xs mx-auto flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Logout</button>
+                    </div>
+
+                    <!-- CRUD (To-Do) Section -->
+                    <div id="crud-container" class="bg-white p-6 rounded-lg shadow-lg">
+                         <h3 class="text-2xl font-semibold text-gray-800 mb-4">My To-Do List</h3>
+                         <!-- Form to Add new To-Do -->
+                         <div class="flex gap-2 mb-4">
+                             <input type="text" id="todoInput" placeholder="Add a new task..." class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                             <button id="addTodoBtn" class="flex-shrink-0 justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Add</button>
+                         </div>
+                         <!-- List of To-Dos -->
+                         <div id="todoList" class="space-y-3">
+                            <!-- To-do items will be dynamically inserted here -->
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Message Box -->
+                <div id="messageBox" class="max-w-md mx-auto mt-6"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  onSnapshot,
+  deleteDoc,
+  updateDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBlHqlb5LWc72-ZmzmmZsulAhzloiTtHpE",
+  authDomain: "sample-firebase-ai-app-6673c.firebaseapp.com",
+  projectId: "sample-firebase-ai-app-6673c",
+  storageBucket: "sample-firebase-ai-app-6673c.firebasestorage.app",
+  messagingSenderId: "1030975105543",
+  appId: "1:1030975105543:web:b50e334d360fa45000d8a2",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// --- DOM Elements ---
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const registerBtn = document.getElementById("registerBtn");
+const authContainer = document.getElementById("auth-container");
+const userContainer = document.getElementById("user-container");
+const userEmailSpan = document.getElementById("userEmail");
+const logoutButton = document.getElementById("logoutButton");
+const messageBox = document.getElementById("messageBox");
+const todoInput = document.getElementById("todoInput");
+const addTodoBtn = document.getElementById("addTodoBtn");
+const todoList = document.getElementById("todoList");
+
+let unsubscribeTodos = null; // To hold the listener cleanup function
+
+// --- UI Helper ---
+function showMessage(message, isError = false) {
+  messageBox.innerHTML = `<div class="p-4 rounded-md text-sm ${
+    isError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+  } fade-in">${message}</div>`;
+  setTimeout(() => (messageBox.innerHTML = ""), 4000);
+}
+
+// --- Auth Logic ---
+registerBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  const email = emailInput.value;
+  const password = passwordInput.value;
+
+  createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) =>
+      setDoc(doc(db, "users", userCredential.user.uid), {
+        email: userCredential.user.email,
+        createdAt: new Date(),
+      })
+    )
+    .then(() => showMessage(`Successfully registered! Please log in.`, false))
+    .catch((error) => showMessage(error.message, true));
+});
+
+loginBtn.addEventListener("click", (e) => {
+  e.preventDefault();
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => showMessage(`Welcome back!`, false))
+    .catch((error) => showMessage("MALI IMO NA INPUT", true));
+});
+
+logoutButton.addEventListener("click", () => {
+  signOut(auth).catch((error) => showMessage(error.message, true));
+});
+
+// --- Auth State Observer & Real-Time Data ---
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    authContainer.classList.add("hidden");
+    userContainer.classList.remove("hidden");
+    userEmailSpan.textContent = user.email;
+    listenForTodos(user.uid); // Start listening for to-do changes
+  } else {
+    authContainer.classList.remove("hidden");
+    userContainer.classList.add("hidden");
+    userEmailSpan.textContent = "";
+    if (unsubscribeTodos) unsubscribeTodos(); // Stop listening when logged out
+  }
+});
+
+// --- CRUD Logic ---
+
+// CREATE a new to-do
+addTodoBtn.addEventListener("click", () => {
+  const text = todoInput.value.trim();
+  if (text && auth.currentUser) {
+    const userId = auth.currentUser.uid;
+    const todosCollectionRef = collection(db, "users", userId, "todos");
+    addDoc(todosCollectionRef, {
+      text: text,
+      createdAt: new Date(),
+    })
+      .then(() => {
+        todoInput.value = ""; // Clear input
+      })
+      .catch((error) =>
+        showMessage("Error adding task: " + error.message, true)
+      );
+  }
+});
+
+// READ to-dos in real-time
+function listenForTodos(userId) {
+  const todosCollectionRef = collection(db, "users", userId, "todos");
+  unsubscribeTodos = onSnapshot(todosCollectionRef, (snapshot) => {
+    todoList.innerHTML = ""; // Clear current list
+    if (snapshot.empty) {
+      todoList.innerHTML =
+        '<p class="text-gray-500 text-center">No tasks yet. Add one!</p>';
+      return;
+    }
+    snapshot.docs.forEach((doc) => {
+      const todo = doc.data();
+      const todoId = doc.id;
+
+      const item = document.createElement("div");
+      item.className = "todo-item";
+      item.dataset.id = todoId; // Set the ID on the parent element
+      item.innerHTML = `
+                        <span class="flex-grow">${todo.text}</span>
+                        <div class="flex-shrink-0 flex gap-2">
+                            <button class="edit-btn text-sm font-medium text-blue-600 hover:text-blue-800">Edit</button>
+                            <button class="delete-btn text-sm font-medium text-red-600 hover:text-red-800">Delete</button>
+                        </div>
+                    `;
+      todoList.appendChild(item);
+    });
+  });
+}
+
+// Event delegation for UPDATE and DELETE
+todoList.addEventListener("click", (e) => {
+  const userId = auth.currentUser.uid;
+  if (!userId) return;
+
+  const target = e.target;
+  const todoItem = target.closest(".todo-item");
+  if (!todoItem) return;
+
+  const todoId = todoItem.dataset.id;
+  const docRef = doc(db, "users", userId, "todos", todoId);
+
+  // Handle Edit button
+  if (target.classList.contains("edit-btn")) {
+    const textSpan = todoItem.querySelector("span");
+    const currentText = textSpan.textContent;
+
+    todoItem.innerHTML = `
+                    <input type="text" value="${currentText}" class="flex-grow block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <div class="flex-shrink-0 flex gap-2">
+                        <button class="save-btn text-sm font-medium text-green-600 hover:text-green-800">Save</button>
+                        <button class="cancel-btn text-sm font-medium text-gray-600 hover:text-gray-800">Cancel</button>
+                    </div>
+                `;
+    todoItem.querySelector("input").focus();
+  }
+
+  // Handle Save button
+  if (target.classList.contains("save-btn")) {
+    const newText = todoItem.querySelector("input").value.trim();
+    if (newText) {
+      updateDoc(docRef, { text: newText }).catch((error) =>
+        showMessage("Error updating task: " + error.message, true)
+      );
+    }
+    // onSnapshot will handle reverting the UI
+  }
+
+  // Handle Cancel button
+  if (target.classList.contains("cancel-btn")) {
+    // Revert UI by re-reading the doc and rebuilding the item's HTML
+    getDoc(docRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const todo = docSnap.data();
+        todoItem.innerHTML = `
+                            <span class="flex-grow">${todo.text}</span>
+                            <div class="flex-shrink-0 flex gap-2">
+                                <button class="edit-btn text-sm font-medium text-blue-600 hover:text-blue-800">Edit</button>
+                                <button class="delete-btn text-sm font-medium text-red-600 hover:text-red-800">Delete</button>
+                            </div>
+                        `;
+      }
+    });
+  }
+
+  // Handle Delete button
+  if (target.classList.contains("delete-btn")) {
+    deleteDoc(docRef).catch((error) =>
+      showMessage("Error deleting task: " + error.message, true)
+    );
+  }
+});
+
+    </script>
+</body>
+</html>
+
